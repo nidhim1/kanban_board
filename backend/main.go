@@ -22,9 +22,13 @@ func main() {
 	// Create the Supabase client (shared across all handlers)
 	client := supabase.NewClient(cfg.SupabaseURL, cfg.SupabaseAnonKey)
 
-	// Initialize handlers with the shared Supabase client
+	// Initialize all handlers with the shared Supabase client
 	authHandler := handlers.NewAuthHandler(client)
 	tasksHandler := handlers.NewTasksHandler(client)
+	labelsHandler := handlers.NewLabelsHandler(client)
+	teamHandler := handlers.NewTeamHandler(client)
+	commentsHandler := handlers.NewCommentsHandler(client)
+	activityHandler := handlers.NewActivityHandler(client)
 
 	// Create the Chi router
 	r := chi.NewRouter()
@@ -62,16 +66,11 @@ func main() {
 		w.Write([]byte(`{"status":"ok"}`))
 	})
 
-	// Auth endpoints are public - the user doesn't have a token yet
+	// Auth endpoints are public
 	r.Post("/api/auth/anonymous", authHandler.SignInAnonymously)
 	r.Post("/api/auth/refresh", authHandler.RefreshToken)
 	
-	// --- Protected Routes (auth required) ---
-	// Everything inside this group goes through AuthMiddleware first.
-	r.Group(func(r chi.Router) {
-			r.Use(middleware.AuthMiddleware)
-	})
-
+	// --- Protected Routes ---
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.AuthMiddleware)
 
@@ -81,6 +80,32 @@ func main() {
 		r.Patch("/api/tasks/{id}", tasksHandler.UpdateTask)
 		r.Delete("/api/tasks/{id}", tasksHandler.DeleteTask)
 		r.Put("/api/tasks/reorder", tasksHandler.ReorderTasks)
+
+		// Labels
+		r.Get("/api/labels", labelsHandler.GetLabels)
+		r.Post("/api/labels", labelsHandler.CreateLabel)
+		r.Delete("/api/labels/{id}", labelsHandler.DeleteLabel)
+
+		// Task-label assignments
+		r.Post("/api/task-labels", labelsHandler.AssignLabel)
+		r.Delete("/api/task-labels/{taskId}/{labelId}", labelsHandler.RemoveLabel)
+		
+		// Team members
+		r.Get("/api/team", teamHandler.GetMembers)
+		r.Post("/api/team", teamHandler.CreateMember)
+		r.Delete("/api/team/{id}", teamHandler.DeleteMember)
+		
+		// Task-member assignments
+		r.Post("/api/task-assignees", teamHandler.AssignMember)
+		r.Delete("/api/task-assignees/{taskId}/{memberId}", teamHandler.RemoveMember)
+		
+		// Comments
+		r.Get("/api/tasks/{taskId}/comments", commentsHandler.GetComments)
+		r.Post("/api/tasks/{taskId}/comments", commentsHandler.CreateComment)
+		r.Delete("/api/comments/{id}", commentsHandler.DeleteComment)
+		
+		// Activity log
+		r.Get("/api/tasks/{taskId}/activity", activityHandler.GetActivity)
 	})
 
 	// Start server
