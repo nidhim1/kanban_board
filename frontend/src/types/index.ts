@@ -89,7 +89,7 @@ export const STATUS_LABELS: Record<TaskStatus, string> = {
 };
 
 // Priority display config — color, background, and arrow direction
-export const PRIORITY_CONFIG: Record
+export const PRIORITY_CONFIG: Record <
   Priority,
   {
     label: string;
