@@ -84,9 +84,16 @@ export function Board({
   // ============================================
   // The ID could be a column ID ("todo") or a task UUID.
   function findColumn(id: string): TaskStatus | null {
+    // Check if it's a column ID directly
     if (["todo", "in_progress", "in_review", "done"].includes(id)) {
       return id as TaskStatus;
     }
+    // Check if it's a drop zone at the end of a column (e.g. "todo-end")
+    const endMatch = String(id).match(/^(.+)-end$/);
+    if (endMatch && ["todo", "in_progress", "in_review", "done"].includes(endMatch[1])) {
+      return endMatch[1] as TaskStatus;
+    }
+    // Check if it's a task
     const task = tasks.find((t) => t.id === id);
     return task?.status || null;
   }
@@ -180,12 +187,13 @@ export function Board({
               // SortableContext tells dnd-kit which items are in this column
               <SortableContext
                 key={col.id}
-                items={columnTasks.map((t) => t.id)}
+                items={[...columnTasks.map((t) => t.id), `${col.id}-end`]}
                 strategy={verticalListSortingStrategy}
               >
                 <Column
                   column={col}
                   tasks={columnTasks}
+                  totalTasks={tasks.length}
                   isDark={isDark}
                   isOver={overColumn === col.id}
                   onOpenCreate={() => onOpenCreate(col.id)}

@@ -129,16 +129,16 @@ export function TaskDetailPanel({
   // ============================================
   // Theme-aware styles
   // ============================================
-  const bg = isDark ? "bg-board-card-dark" : "bg-white";
+  const bg = isDark ? "bg-[#161b22]" : "bg-white";
   const textPrimary = isDark ? "text-[#e8eaed]" : "text-[#1a1e24]";
-  const textSecondary = isDark ? "text-[#8b8d90]" : "text-[#6b6e73]";
-  const border = isDark ? "border-[#363a42]" : "border-[#e0dbd2]";
-  const inputBg = isDark ? "bg-[#1e2228]" : "bg-[#f5f3ee]";
-  const descBg = isDark ? "bg-[#1e2228]" : "bg-[#faf8f4]";
+  const textSecondary = isDark ? "text-[#7a8394]" : "text-[#6b7280]";
+  const border = isDark ? "border-[#2a2f38]" : "border-[#e8eaed]";
+  const inputBg = isDark ? "bg-[#0d1117]" : "bg-[#f4f5f7]";
+  const descBg = isDark ? "bg-[#0d1117]" : "bg-[#f8f9fb]";
 
   const selectStyle = isDark
-    ? "bg-[#262b33] text-[#e8eaed] border border-[#363a42] rounded px-2 py-1"
-    : "bg-white text-[#1a1e24] border border-[#e0dbd2] rounded px-2 py-1";
+    ? "bg-[#1c2128] text-[#e8eaed] border border-[#2a2f38] rounded px-2 py-1"
+    : "bg-white text-[#1a1e24] border border-[#e8eaed] rounded px-2 py-1";
 
   // ============================================
   // Extract nested relations from PostgREST
@@ -249,6 +249,23 @@ export function TaskDetailPanel({
     await onCreateMember(newMemberName.trim(), color);
     setNewMemberName("");
     setShowNewMember(false);
+
+    // After the parent refreshes members, find the newly created member and assign them to this task automatically.
+    // Small delay to let the parent state update.
+    setTimeout(async () => {
+      try {
+        const updatedMembers = await api.fetchTeamMembers();
+        const newMember = updatedMembers.find(
+          (m) => !members.some((existing) => existing.id === m.id)
+        );
+        if (newMember) {
+          await api.assignMember(task.id, newMember.id);
+          onRefresh();
+        }
+      } catch (err) {
+        console.error("Failed to auto-assign new member:", err);
+      }
+    }, 300);
   };
 
   // ============================================
@@ -599,7 +616,7 @@ export function TaskDetailPanel({
                         >
                           <div
                             className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
-                              isDark ? "bg-[#2a2e35]" : "bg-[#f0ece4]"
+                              isDark ? "bg-[#1c2128]" : "bg-[#f0f2f5]"
                             }`}
                           >
                             {getActivityIcon(entry.action)}

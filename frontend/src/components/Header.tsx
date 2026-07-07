@@ -7,15 +7,9 @@ import {
   Users,
   MoreHorizontal,
   Flag,
-  LayoutList,
+  LayoutGrid,
 } from "lucide-react";
 import type { Label } from "../types";
-
-// ============================================
-// Props interface
-// ============================================
-// The Header doesn't own any state — it receives everything from App.tsx and calls back when the user interacts.
-// This keeps state management centralized and components reusable.
 
 interface HeaderProps {
   isDark: boolean;
@@ -51,34 +45,36 @@ export function Header({
   onClearFilters,
 }: HeaderProps) {
   // ============================================
-  // Theme-aware style tokens
+  // Theme tokens
   // ============================================
-  
   const bg = isDark ? "bg-board-header-dark" : "bg-board-header-light";
-  const border = isDark ? "border-[#2a2e35]" : "border-[#e5e0d5]";
+  const border = isDark ? "border-[#1e252e]" : "border-[#e8eaed]";
   const textPrimary = isDark ? "text-[#e8eaed]" : "text-[#1a1e24]";
-  const textSecondary = isDark ? "text-[#8b8d90]" : "text-[#6b6e73]";
-  const inputBg = isDark ? "bg-[#262b33]" : "bg-[#f5f3ee]";
+  const textSecondary = isDark ? "text-[#7a8394]" : "text-[#6b7280]";
+  const textMuted = isDark ? "text-[#4a5568]" : "text-[#9ca3af]";
+  const inputBg = isDark ? "bg-[#161b22]" : "bg-[#f4f5f7]";
   const chipBg = isDark
-    ? "bg-[#262b33] border-[#363a42]"
-    : "bg-white border-[#e0dbd2]";
+    ? "bg-[#161b22] border-[#2a2f38]"
+    : "bg-white border-[#e8eaed]";
   const chipActive = isDark
-    ? "bg-[#363a42] border-accent-mint"
-    : "bg-[#eef8f4] border-accent-mint";
+    ? "bg-[#1a2e2a] border-accent-mint/40"
+    : "bg-[#ecfdf5] border-accent-mint/40";
+  const iconBtnClass = `p-2 rounded-lg ${inputBg} border ${border} hover:opacity-80 transition-opacity`;
 
-  // Deduplicate label names for filter chips (in case two labels have the same name with different colors)
+  // Completion percentage for the progress bar
+  const completionPercent = totalTasks > 0
+    ? Math.round((doneTasks / totalTasks) * 100)
+    : 0;
+
   const uniqueLabels = Array.from(new Set(labels.map((l) => l.name)));
 
   return (
     <header className={`${bg} border-b ${border}`}>
-      {/* ============================================
-          Row 1: Logo, search bar, action buttons
-          ============================================ */}
+      {/* ---- Row 1: Identity + Actions ---- */}
       <div className="px-5 py-3 flex items-center justify-between">
-        {/* Left side: Board identity */}
         <div className="flex items-center gap-3">
-          {/* Board icon — mint green with grid pattern */}
-          <div className="w-9 h-9 rounded-lg bg-accent-mint/15 flex items-center justify-center">
+          {/* Board icon */}
+          <div className="w-9 h-9 rounded-lg bg-accent-mint/10 flex items-center justify-center">
             <svg
               width="18"
               height="18"
@@ -86,209 +82,139 @@ export function Header({
               fill="none"
               className="text-accent-mint"
             >
-              <rect
-                x="3"
-                y="3"
-                width="7"
-                height="7"
-                rx="1.5"
-                fill="currentColor"
-                opacity="0.6"
-              />
-              <rect
-                x="14"
-                y="3"
-                width="7"
-                height="7"
-                rx="1.5"
-                fill="currentColor"
-              />
-              <rect
-                x="3"
-                y="14"
-                width="7"
-                height="7"
-                rx="1.5"
-                fill="currentColor"
-              />
-              <rect
-                x="14"
-                y="14"
-                width="7"
-                height="7"
-                rx="1.5"
-                fill="currentColor"
-                opacity="0.6"
-              />
+              <rect x="3" y="3" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.5" />
+              <rect x="14" y="3" width="7" height="7" rx="1.5" fill="currentColor" />
+              <rect x="3" y="14" width="7" height="7" rx="1.5" fill="currentColor" />
+              <rect x="14" y="14" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.5" />
             </svg>
           </div>
           <div>
-            <h1
-              className={`text-base font-semibold ${textPrimary} leading-tight`}
-            >
+            <h1 className={`text-[15px] font-semibold ${textPrimary} leading-tight tracking-[-0.01em]`}>
               Sprint board
             </h1>
-            <p className={`text-xs ${textSecondary}`}>Q3 product launch</p>
+            <p className={`text-[11px] ${textMuted} mt-0.5`}>Q3 product launch</p>
           </div>
         </div>
 
-        {/* Right side: Search + action buttons */}
         <div className="flex items-center gap-2">
-          {/* Search input with keyboard shortcut hint */}
-          <div
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${inputBg} border ${border}`}
-          >
-            <Search size={14} className={textSecondary} />
+          {/* Search */}
+          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${inputBg} border ${border}`}>
+            <Search size={14} className={textMuted} />
             <input
               type="text"
               placeholder="Search tasks"
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
-              className={`bg-transparent border-none outline-none text-xs w-28 ${textPrimary} placeholder:text-[#8b8d90]`}
+              className={`bg-transparent border-none outline-none text-xs w-28 ${textPrimary} placeholder:text-[#9ca3af] dark:placeholder:text-[#4a5568]`}
             />
-            {/* Keyboard shortcut badge — shows users they can press / to focus */}
-            <span
-              className={`text-2xs ${textSecondary} px-1 py-0.5 rounded border ${border} leading-none`}
-            >
+            <kbd className={`text-[10px] ${textMuted} px-1.5 py-0.5 rounded border ${border} leading-none font-mono`}>
               /
-            </span>
+            </kbd>
           </div>
 
-          {/* Filter button */}
-          <button
-            className={`p-2 rounded-lg ${inputBg} border ${border} hover:opacity-80 transition-opacity`}
-          >
-            <Filter size={14} className={textSecondary} />
+          <button className={iconBtnClass}>
+            <Filter size={14} className={textMuted} />
+          </button>
+          <button onClick={onToggleTheme} className={iconBtnClass}>
+            {isDark ? <Sun size={14} className={textMuted} /> : <Moon size={14} className={textMuted} />}
+          </button>
+          <button className={iconBtnClass}>
+            <MoreHorizontal size={14} className={textMuted} />
           </button>
 
-          {/* Theme toggle */}
-          <button
-            onClick={onToggleTheme}
-            className={`p-2 rounded-lg ${inputBg} border ${border} hover:opacity-80 transition-opacity`}
-          >
-            {isDark ? (
-              <Sun size={14} className={textSecondary} />
-            ) : (
-              <Moon size={14} className={textSecondary} />
-            )}
-          </button>
-
-          {/* More options */}
-          <button
-            className={`p-2 rounded-lg ${inputBg} border ${border} hover:opacity-80 transition-opacity`}
-          >
-            <MoreHorizontal size={14} className={textSecondary} />
-          </button>
-
-          {/* New task — primary CTA, always mint green */}
           <button
             onClick={onNewTask}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent-mint hover:bg-accent-mint-hover text-white text-xs font-medium transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-accent-mint hover:bg-accent-mint-hover text-white text-xs font-medium transition-colors shadow-sm shadow-accent-mint/20"
           >
-            <Plus size={14} />
+            <Plus size={14} strokeWidth={2.5} />
             New task
           </button>
         </div>
       </div>
 
-      {/* ============================================
-          Row 2: Stats - task counts with colored indicators
-          ============================================ */}
-      <div
-        className={`px-5 py-2 flex items-center justify-between border-t ${border}`}
-      >
-        <div className="flex items-center gap-4 text-xs">
-          {/* Total tasks */}
+      {/* ---- Row 2: Stats + Progress bar ---- */}
+      <div className={`px-5 py-2 flex items-center justify-between border-t ${border}`}>
+        <div className="flex items-center gap-5 text-xs">
+          {/* Stats */}
           <span className={textPrimary}>
-            <span className="font-semibold">{totalTasks}</span>
-            <span className={`ml-1 ${textSecondary}`}>total</span>
+            <span className="font-semibold tabular-nums">{totalTasks}</span>
+            <span className={`ml-1 ${textSecondary}`}>tasks</span>
           </span>
-
-          {/* Done count — green dot */}
           <span className="flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-status-done" />
-            <span className="font-semibold text-status-done">{doneTasks}</span>
+            <span className="font-semibold text-status-done tabular-nums">{doneTasks}</span>
             <span className={textSecondary}>done</span>
           </span>
-
-          {/* Overdue count — red dot (only shows if > 0) */}
           {overdueTasks > 0 && (
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-priority-high" />
-              <span className="font-semibold text-priority-high">
-                {overdueTasks}
-              </span>
+              <span className="font-semibold text-priority-high tabular-nums">{overdueTasks}</span>
               <span className={textSecondary}>overdue</span>
             </span>
           )}
-
-          {/* Due today — amber dot (only shows if > 0) */}
           {dueTodayTasks > 0 && (
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-priority-normal" />
-              <span className="font-semibold text-priority-normal">
-                {dueTodayTasks}
-              </span>
+              <span className="font-semibold text-priority-normal tabular-nums">{dueTodayTasks}</span>
               <span className={textSecondary}>due today</span>
             </span>
           )}
+
+          {/* Inline progress bar */}
+          {totalTasks > 0 && (
+            <div className="flex items-center gap-2 ml-2">
+              <div className={`w-24 h-1.5 rounded-full ${isDark ? "bg-[#1e252e]" : "bg-[#e8eaed]"}`}>
+                <div
+                  className="h-full rounded-full bg-accent-mint column-progress"
+                  style={{ width: `${completionPercent}%` }}
+                />
+              </div>
+              <span className={`text-[10px] font-medium tabular-nums ${textMuted}`}>
+                {completionPercent}%
+              </span>
+            </div>
+          )}
         </div>
 
-        {/* Member count on the right */}
-        <div
-          className={`flex items-center gap-1.5 text-xs ${textSecondary}`}
-        >
+        <div className={`flex items-center gap-1.5 text-xs ${textSecondary}`}>
           <Users size={13} />
           <span>{memberCount} members</span>
         </div>
       </div>
 
-      {/* ============================================
-          Row 3: Filter chips
-          ============================================
-          "All" clears all filters.
-          "High priority" filters to high-priority tasks.
-          Label chips filter by label name.
-          Active filters get mint green accent. */}
-      <div
-        className={`px-5 py-2 flex items-center gap-2 border-t ${border}`}
-      >
-        {/* "All" chip — clears filters */}
+      {/* ---- Row 3: Filters ---- */}
+      <div className={`px-5 py-2 flex items-center gap-2 border-t ${border}`}>
         <button
           onClick={onClearFilters}
-          className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+          className={`px-3 py-1 rounded-full text-[11px] font-medium border transition-all ${
             activeFilters.length === 0
               ? chipActive + " text-accent-mint"
               : chipBg + " " + textSecondary
           }`}
         >
           <span className="flex items-center gap-1.5">
-            <LayoutList size={12} />
+            <LayoutGrid size={11} />
             All
           </span>
         </button>
-
-        {/* "High priority" chip */}
         <button
           onClick={() => onToggleFilter("high")}
-          className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+          className={`px-3 py-1 rounded-full text-[11px] font-medium border transition-all ${
             activeFilters.includes("high")
               ? chipActive + " text-accent-mint"
               : chipBg + " " + textSecondary
           }`}
         >
           <span className="flex items-center gap-1.5">
-            <Flag size={12} />
+            <Flag size={11} />
             High priority
           </span>
         </button>
-
-        {/* One chip per unique label name */}
         {uniqueLabels.map((name) => (
           <button
             key={name}
             onClick={() => onToggleFilter(name)}
-            className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+            className={`px-3 py-1 rounded-full text-[11px] font-medium border transition-all ${
               activeFilters.includes(name)
                 ? chipActive + " text-accent-mint"
                 : chipBg + " " + textSecondary

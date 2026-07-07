@@ -110,10 +110,13 @@ export default function App() {
         user_id: userId,
       });
 
-      // Assign selected labels to the new task
+      // Assign selected labels and members to the new task
       if (created.length > 0) {
         for (const labelId of data.label_ids) {
           await api.assignLabel(created[0].id, labelId);
+        }
+        for (const memberId of data.member_ids) {
+          await api.assignMember(created[0].id, memberId);
         }
       }
 
@@ -128,14 +131,17 @@ export default function App() {
   // ============================================
   // Label creation (used by both modal and detail panel later)
   // ============================================
-  const handleCreateLabel = async (name: string, color: string) => {
-    if (!userId) return;
+  const handleCreateLabel = async (name: string, color: string): Promise<string | null> => {
+    if (!userId) return null;
     try {
-      await api.createLabel({ name, color, user_id: userId });
+      const created = await api.createLabel({ name, color, user_id: userId });
       const updated = await api.fetchLabels();
       setLabels(updated);
+      // Return the new label's ID so callers can use it immediately
+      return created.length > 0 ? created[0].id : null;
     } catch (err) {
       console.error("Failed to create label:", err);
+      return null;
     }
   };
 
@@ -164,14 +170,16 @@ export default function App() {
   // ============================================
   // Member creation
   // ============================================
-  const handleCreateMember = async (name: string, color: string) => {
-    if (!userId) return;
+  const handleCreateMember = async (name: string, color: string): Promise<string | null> => {
+    if (!userId) return null;
     try {
-      await api.createTeamMember({ name, avatar_color: color, user_id: userId });
+      const created = await api.createTeamMember({ name, avatar_color: color, user_id: userId });
       const updated = await api.fetchTeamMembers();
       setMembers(updated);
+      return created.length > 0 ? created[0].id : null;
     } catch (err) {
       console.error("Failed to create member:", err);
+      return null;
     }
   };
 
@@ -342,9 +350,11 @@ export default function App() {
           isDark={isDark}
           defaultStatus={createInStatus}
           labels={labels}
+          members={members}
           onClose={() => setShowCreateModal(false)}
           onCreate={handleCreateTask}
           onCreateLabel={handleCreateLabel}
+          onCreateMember={handleCreateMember}
         />
       )}
 
