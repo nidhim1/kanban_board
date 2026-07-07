@@ -16,7 +16,6 @@ interface TaskCardProps {
   task: Task;
   isDark: boolean;
   isDone?: boolean;     // Column tells us if this is the "done" column
-  isOverlay?: boolean;  // True when rendering the drag ghost
   onClick: () => void;
 }
 
@@ -34,7 +33,6 @@ export function TaskCard({
   task,
   isDark,
   isDone,
-  isOverlay,
   onClick,
 }: TaskCardProps) {
   // ============================================

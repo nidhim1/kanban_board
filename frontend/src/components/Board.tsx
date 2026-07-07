@@ -194,7 +194,6 @@ export function Board({
               <TaskCard
                 task={activeTask}
                 isDark={isDark}
-                isOverlay
                 onClick={() => {}}
               />
             </div>
