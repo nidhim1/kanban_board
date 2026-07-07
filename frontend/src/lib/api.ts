@@ -2,7 +2,7 @@ import type { Task, Label, TeamMember, Comment, ActivityEntry } from "../types";
 
 // In development, Vite proxies /api to localhost:8080 (see vite.config.ts).
 // In production, both frontend and backend share the same domain, so an empty string means "same origin".
-const API_BASE = "";
+const API_BASE = import.meta.env.VITE_API_URL || "";
 
 // ============================================
 // Token management
