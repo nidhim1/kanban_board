@@ -44,9 +44,6 @@ export function Header({
   onToggleFilter,
   onClearFilters,
 }: HeaderProps) {
-  // ============================================
-  // Theme tokens
-  // ============================================
   const bg = isDark ? "bg-board-header-dark" : "bg-board-header-light";
   const border = isDark ? "border-[#1e252e]" : "border-[#e8eaed]";
   const textPrimary = isDark ? "text-[#e8eaed]" : "text-[#1a1e24]";
@@ -61,7 +58,6 @@ export function Header({
     : "bg-[#ecfdf5] border-accent-mint/40";
   const iconBtnClass = `p-2 rounded-lg ${inputBg} border ${border} hover:opacity-80 transition-opacity`;
 
-  // Completion percentage for the progress bar
   const completionPercent = totalTasks > 0
     ? Math.round((doneTasks / totalTasks) * 100)
     : 0;
@@ -70,35 +66,30 @@ export function Header({
 
   return (
     <header className={`${bg} border-b ${border}`}>
-      {/* ---- Row 1: Identity + Actions ---- */}
-      <div className="px-5 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          {/* Board icon */}
-          <div className="w-9 h-9 rounded-lg bg-accent-mint/10 flex items-center justify-center">
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              className="text-accent-mint"
-            >
+      {/* Row 1: Identity + Actions */}
+      <div className="px-3 sm:px-5 py-3 flex items-center justify-between gap-2">
+        {/* Left: Board identity */}
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg bg-accent-mint/10 flex items-center justify-center flex-shrink-0">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-accent-mint sm:w-[18px] sm:h-[18px]">
               <rect x="3" y="3" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.5" />
               <rect x="14" y="3" width="7" height="7" rx="1.5" fill="currentColor" />
               <rect x="3" y="14" width="7" height="7" rx="1.5" fill="currentColor" />
               <rect x="14" y="14" width="7" height="7" rx="1.5" fill="currentColor" opacity="0.5" />
             </svg>
           </div>
-          <div>
-            <h1 className={`text-[15px] font-semibold ${textPrimary} leading-tight tracking-[-0.01em]`}>
+          <div className="min-w-0">
+            <h1 className={`text-sm sm:text-[15px] font-semibold ${textPrimary} leading-tight tracking-[-0.01em] truncate`}>
               Sprint board
             </h1>
-            <p className={`text-[11px] ${textMuted} mt-0.5`}>Q3 product launch</p>
+            <p className={`text-[10px] sm:text-[11px] ${textMuted} mt-0.5 truncate`}>Q3 product launch</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Search */}
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${inputBg} border ${border}`}>
+        {/* Right: Actions */}
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          {/* Search — hidden on mobile, shown on sm+ */}
+          <div className={`hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg ${inputBg} border ${border}`}>
             <Search size={14} className={textMuted} />
             <input
               type="text"
@@ -107,35 +98,42 @@ export function Header({
               onChange={(e) => onSearchChange(e.target.value)}
               className={`bg-transparent border-none outline-none text-xs w-28 ${textPrimary} placeholder:text-[#9ca3af] dark:placeholder:text-[#4a5568]`}
             />
-            <kbd className={`text-[10px] ${textMuted} px-1.5 py-0.5 rounded border ${border} leading-none font-mono`}>
-              /
-            </kbd>
+            <kbd className={`text-[10px] ${textMuted} px-1.5 py-0.5 rounded border ${border} leading-none font-mono`}>/</kbd>
           </div>
 
-          <button className={iconBtnClass}>
+          {/* Mobile search button */}
+          <button className={`sm:hidden ${iconBtnClass}`}
+            onClick={() => {
+              const q = prompt("Search tasks:");
+              if (q !== null) onSearchChange(q);
+            }}
+          >
+            <Search size={14} className={textMuted} />
+          </button>
+
+          <button className={`hidden sm:flex ${iconBtnClass}`}>
             <Filter size={14} className={textMuted} />
           </button>
           <button onClick={onToggleTheme} className={iconBtnClass}>
             {isDark ? <Sun size={14} className={textMuted} /> : <Moon size={14} className={textMuted} />}
           </button>
-          <button className={iconBtnClass}>
+          <button className={`hidden sm:flex ${iconBtnClass}`}>
             <MoreHorizontal size={14} className={textMuted} />
           </button>
 
           <button
             onClick={onNewTask}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-accent-mint hover:bg-accent-mint-hover text-white text-xs font-medium transition-colors shadow-sm shadow-accent-mint/20"
+            className="flex items-center gap-1 sm:gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-lg bg-accent-mint hover:bg-accent-mint-hover text-white text-xs font-medium transition-colors shadow-sm shadow-accent-mint/20"
           >
             <Plus size={14} strokeWidth={2.5} />
-            New task
+            <span className="hidden sm:inline">New task</span>
           </button>
         </div>
       </div>
 
-      {/* ---- Row 2: Stats + Progress bar ---- */}
-      <div className={`px-5 py-2 flex items-center justify-between border-t ${border}`}>
-        <div className="flex items-center gap-5 text-xs">
-          {/* Stats */}
+      {/* Row 2: Stats */}
+      <div className={`px-3 sm:px-5 py-2 flex items-center justify-between border-t ${border} overflow-x-auto`}>
+        <div className="flex items-center gap-3 sm:gap-5 text-xs whitespace-nowrap">
           <span className={textPrimary}>
             <span className="font-semibold tabular-nums">{totalTasks}</span>
             <span className={`ml-1 ${textSecondary}`}>tasks</span>
@@ -156,14 +154,14 @@ export function Header({
             <span className="flex items-center gap-1.5">
               <span className="w-1.5 h-1.5 rounded-full bg-priority-normal" />
               <span className="font-semibold text-priority-normal tabular-nums">{dueTodayTasks}</span>
-              <span className={textSecondary}>due today</span>
+              <span className={`${textSecondary} hidden sm:inline`}>due today</span>
+              <span className={`${textSecondary} sm:hidden`}>today</span>
             </span>
           )}
 
-          {/* Inline progress bar */}
           {totalTasks > 0 && (
-            <div className="flex items-center gap-2 ml-2">
-              <div className={`w-24 h-1.5 rounded-full ${isDark ? "bg-[#1e252e]" : "bg-[#e8eaed]"}`}>
+            <div className="flex items-center gap-2">
+              <div className={`w-16 sm:w-24 h-1.5 rounded-full ${isDark ? "bg-[#1e252e]" : "bg-[#e8eaed]"}`}>
                 <div
                   className="h-full rounded-full bg-accent-mint column-progress"
                   style={{ width: `${completionPercent}%` }}
@@ -176,17 +174,17 @@ export function Header({
           )}
         </div>
 
-        <div className={`flex items-center gap-1.5 text-xs ${textSecondary}`}>
+        <div className={`hidden sm:flex items-center gap-1.5 text-xs ${textSecondary}`}>
           <Users size={13} />
           <span>{memberCount} members</span>
         </div>
       </div>
 
-      {/* ---- Row 3: Filters ---- */}
-      <div className={`px-5 py-2 flex items-center gap-2 border-t ${border}`}>
+      {/* Row 3: Filters — horizontal scroll on mobile */}
+      <div className={`px-3 sm:px-5 py-2 flex items-center gap-2 border-t ${border} overflow-x-auto`}>
         <button
           onClick={onClearFilters}
-          className={`px-3 py-1 rounded-full text-[11px] font-medium border transition-all ${
+          className={`px-3 py-1 rounded-full text-[11px] font-medium border transition-all whitespace-nowrap flex-shrink-0 ${
             activeFilters.length === 0
               ? chipActive + " text-accent-mint"
               : chipBg + " " + textSecondary
@@ -199,7 +197,7 @@ export function Header({
         </button>
         <button
           onClick={() => onToggleFilter("high")}
-          className={`px-3 py-1 rounded-full text-[11px] font-medium border transition-all ${
+          className={`px-3 py-1 rounded-full text-[11px] font-medium border transition-all whitespace-nowrap flex-shrink-0 ${
             activeFilters.includes("high")
               ? chipActive + " text-accent-mint"
               : chipBg + " " + textSecondary
@@ -214,7 +212,7 @@ export function Header({
           <button
             key={name}
             onClick={() => onToggleFilter(name)}
-            className={`px-3 py-1 rounded-full text-[11px] font-medium border transition-all ${
+            className={`px-3 py-1 rounded-full text-[11px] font-medium border transition-all whitespace-nowrap flex-shrink-0 ${
               activeFilters.includes(name)
                 ? chipActive + " text-accent-mint"
                 : chipBg + " " + textSecondary

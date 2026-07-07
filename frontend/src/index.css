@@ -1,6 +1,9 @@
 /* Import Tailwind */
 @import "tailwindcss";
 
+/* ============================================
+   Design system tokens
+   ============================================ */
 @theme {
   /* Light mode: clean white surfaces, cool gray wells */
   --color-board-bg-light: #f8f9fb;
@@ -156,5 +159,14 @@
     height: 2px;
     border-radius: 1px;
     transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Hide scrollbar for horizontal scroll (mobile board columns) */
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .hide-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }

@@ -4,6 +4,7 @@ import {
   DragOverlay,
   closestCorners,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   type DragStartEvent,
@@ -36,24 +37,19 @@ export function Board({
   onSelectTask,
   onReorder,
 }: BoardProps) {
-  // Track which card is being dragged and which column it's over
   const [activeId, setActiveId] = useState<string | null>(null);
   const [overColumn, setOverColumn] = useState<string | null>(null);
 
-  // ============================================
-  // Sensor configuration
-  // ============================================
-  // PointerSensor with a 5px activation distance means you need to move the mouse 5px before a drag starts. This prevents accidental drags when clicking a card to open the detail panel.
+  // Support both mouse and touch for mobile drag-and-drop
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 5 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 200, tolerance: 5 },
     })
   );
 
-  // ============================================
-  // Group tasks by column and sort by position
-  // ============================================
-  // useMemo avoids recalculating on every render - only recalculates when the tasks array actually changes.
   const tasksByColumn = useMemo(() => {
     const map: Record<TaskStatus, Task[]> = {
       todo: [],
@@ -66,7 +62,6 @@ export function Board({
       map[task.status]?.push(task);
     }
 
-    // Sort each column by position (0 = top of column)
     for (const key of Object.keys(map) as TaskStatus[]) {
       map[key].sort((a, b) => a.position - b.position);
     }
@@ -74,39 +69,25 @@ export function Board({
     return map;
   }, [tasks]);
 
-  // The card currently being dragged (for the DragOverlay ghost)
-  const activeTask = activeId
-    ? tasks.find((t) => t.id === activeId)
-    : null;
+  const activeTask = activeId ? tasks.find((t) => t.id === activeId) : null;
 
-  // ============================================
-  // Helper: find which column an ID belongs to
-  // ============================================
-  // The ID could be a column ID ("todo") or a task UUID.
   function findColumn(id: string): TaskStatus | null {
-    // Check if it's a column ID directly
     if (["todo", "in_progress", "in_review", "done"].includes(id)) {
       return id as TaskStatus;
     }
-    // Check if it's a drop zone at the end of a column (e.g. "todo-end")
+    // Check for end-of-column drop zones
     const endMatch = String(id).match(/^(.+)-end$/);
     if (endMatch && ["todo", "in_progress", "in_review", "done"].includes(endMatch[1])) {
       return endMatch[1] as TaskStatus;
     }
-    // Check if it's a task
     const task = tasks.find((t) => t.id === id);
     return task?.status || null;
   }
-
-  // ============================================
-  // Drag event handlers
-  // ============================================
 
   function handleDragStart(event: DragStartEvent) {
     setActiveId(event.active.id as string);
   }
 
-  // Fires continuously as the dragged card moves over different targets
   function handleDragOver(event: DragOverEvent) {
     const { over } = event;
     if (!over) {
@@ -116,7 +97,6 @@ export function Board({
     setOverColumn(findColumn(over.id as string));
   }
 
-  // Fires when the card is dropped
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     setActiveId(null);
@@ -131,30 +111,25 @@ export function Board({
     const draggedTask = tasks.find((t) => t.id === activeTaskId);
     if (!draggedTask) return;
 
-    // Build the new order for the target column
     const targetTasks = tasksByColumn[overCol].filter(
       (t) => t.id !== activeTaskId
     );
 
-    // If dropped on another task, insert before it
     const overTaskIndex = targetTasks.findIndex(
       (t) => t.id === (over.id as string)
     );
     if (overTaskIndex >= 0) {
       targetTasks.splice(overTaskIndex, 0, draggedTask);
     } else {
-      // Dropped on the column itself — add at the end
       targetTasks.push(draggedTask);
     }
 
-    // Build the reorder payload with new positions
     const reorderItems = targetTasks.map((t, i) => ({
       id: t.id,
       status: overCol,
       position: i,
     }));
 
-    // If the card moved to a different column, also reorder the source column to close the gap
     if (draggedTask.status !== overCol) {
       const sourceTasks = tasksByColumn[draggedTask.status].filter(
         (t) => t.id !== activeTaskId
@@ -171,7 +146,7 @@ export function Board({
   }
 
   return (
-    <div className="px-4 py-4">
+    <div className="p-3 sm:p-4">
       <DndContext
         sensors={sensors}
         collisionDetection={closestCorners}
@@ -179,35 +154,40 @@ export function Board({
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
-        {/* Four-column grid */}
-        <div className="grid grid-cols-4 gap-3">
+        {/* 
+          Responsive grid:
+          - Mobile: horizontal scroll with fixed-width columns
+          - Tablet (sm): 2 columns grid
+          - Desktop (lg): 4 columns grid
+        */}
+        <div className="
+          grid grid-cols-1 gap-3
+          sm:grid-cols-2
+          lg:grid-cols-4
+        ">
           {COLUMNS.map((col) => {
             const columnTasks = tasksByColumn[col.id];
             return (
-              // SortableContext tells dnd-kit which items are in this column
-              <SortableContext
-                key={col.id}
-                items={[...columnTasks.map((t) => t.id), `${col.id}-end`]}
-                strategy={verticalListSortingStrategy}
-              >
-                <Column
-                  column={col}
-                  tasks={columnTasks}
-                  totalTasks={tasks.length}
-                  isDark={isDark}
-                  isOver={overColumn === col.id}
-                  onOpenCreate={() => onOpenCreate(col.id)}
-                  onSelectTask={onSelectTask}
-                />
-              </SortableContext>
+              <div key={col.id}>
+                <SortableContext
+                  items={[...columnTasks.map((t) => t.id), `${col.id}-end`]}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <Column
+                    column={col}
+                    tasks={columnTasks}
+                    totalTasks={tasks.length}
+                    isDark={isDark}
+                    isOver={overColumn === col.id}
+                    onOpenCreate={() => onOpenCreate(col.id)}
+                    onSelectTask={onSelectTask}
+                  />
+                </SortableContext>
+              </div>
             );
           })}
         </div>
 
-        {/* ============================================
-            DragOverlay — the ghost card that follows the cursor
-            ============================================
-            This renders outside the normal DOM flow so it can float freely. The original card fades (opacity: 0.4) while this overlay shows the card at the cursor position. */}
         <DragOverlay>
           {activeTask ? (
             <div className="drag-overlay">
