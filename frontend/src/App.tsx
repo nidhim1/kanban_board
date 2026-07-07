@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback } from "react";
 import { useTheme } from "./hooks/useTheme";
 import { Header } from "./components/Header";
 import { Board } from "./components/Board";
+import { CreateTaskModal } from "./components/CreateTaskModal";
+import { TaskDetailPanel } from "./components/TaskDetailPanel";
 import * as api from "./lib/api";
-import type { Task, Label, TeamMember, TaskStatus } from "./types";
+import type { Task, Label, TeamMember, TaskStatus, Priority } from "./types";
 
 export default function App() {
   const { isDark, toggle: toggleTheme } = useTheme();
@@ -28,6 +30,14 @@ export default function App() {
   // ============================================
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilters, setActiveFilters] = useState<string[]>([]);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createInStatus, setCreateInStatus] = useState<TaskStatus>("todo");
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+
+  // Keep the detail panel in sync with the latest task data. When tasks are refreshed (after update/reorder), the panel should show the fresh data, not the stale snapshot.
+  const currentTask = selectedTask
+    ? tasks.find((t) => t.id === selectedTask.id) || null
+    : null;
 
   // ============================================
   // Initialize: create anonymous session on first load
@@ -71,6 +81,99 @@ export default function App() {
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // ============================================
+  // Task creation
+  // ============================================
+  const handleCreateTask = async (data: {
+    title: string;
+    description: string;
+    priority: Priority;
+    status: TaskStatus;
+    due_date: string | null;
+    label_ids: string[];
+  }) => {
+    if (!userId) return;
+    try {
+      // Calculate position: put new task at the bottom of its column
+      const maxPos = tasks
+        .filter((t) => t.status === data.status)
+        .reduce((max, t) => Math.max(max, t.position), -1);
+
+      const created = await api.createTask({
+        title: data.title,
+        description: data.description,
+        priority: data.priority,
+        status: data.status,
+        due_date: data.due_date,
+        position: maxPos + 1,
+        user_id: userId,
+      });
+
+      // Assign selected labels to the new task
+      if (created.length > 0) {
+        for (const labelId of data.label_ids) {
+          await api.assignLabel(created[0].id, labelId);
+        }
+      }
+
+      // Refresh all data and close the modal
+      await loadData();
+      setShowCreateModal(false);
+    } catch (err) {
+      console.error("Failed to create task:", err);
+    }
+  };
+
+  // ============================================
+  // Label creation (used by both modal and detail panel later)
+  // ============================================
+  const handleCreateLabel = async (name: string, color: string) => {
+    if (!userId) return;
+    try {
+      await api.createLabel({ name, color, user_id: userId });
+      const updated = await api.fetchLabels();
+      setLabels(updated);
+    } catch (err) {
+      console.error("Failed to create label:", err);
+    }
+  };
+
+  // ============================================
+  // Task update and delete
+  // ============================================
+  const handleUpdateTask = async (id: string, updates: Partial<Task>) => {
+    try {
+      await api.updateTask(id, updates);
+      await loadData();
+    } catch (err) {
+      console.error("Failed to update task:", err);
+    }
+  };
+
+  const handleDeleteTask = async (id: string) => {
+    try {
+      await api.deleteTask(id);
+      setTasks((prev) => prev.filter((t) => t.id !== id));
+      setSelectedTask(null);
+    } catch (err) {
+      console.error("Failed to delete task:", err);
+    }
+  };
+
+  // ============================================
+  // Member creation
+  // ============================================
+  const handleCreateMember = async (name: string, color: string) => {
+    if (!userId) return;
+    try {
+      await api.createTeamMember({ name, avatar_color: color, user_id: userId });
+      const updated = await api.fetchTeamMembers();
+      setMembers(updated);
+    } catch (err) {
+      console.error("Failed to create member:", err);
+    }
+  };
 
   // ============================================
   // Filter logic
@@ -174,6 +277,8 @@ export default function App() {
         isDark={isDark}
         onToggleTheme={toggleTheme}
         onNewTask={() => {
+          setCreateInStatus("todo");
+          setShowCreateModal(true);
         }}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
@@ -198,10 +303,11 @@ export default function App() {
         tasks={filteredTasks}
         isDark={isDark}
         onOpenCreate={(status) => {
-          /* Will open create modal in step 10 */
+          setCreateInStatus(status);
+          setShowCreateModal(true);
         }}
         onSelectTask={(task) => {
-          /* Will open detail panel in step 11 */
+          setSelectedTask(task);
         }}
         onReorder={async (items) => {
           // Optimistic update — move cards instantly in the UI
@@ -230,6 +336,33 @@ export default function App() {
           }
         }}
       />
+
+      {showCreateModal && (
+        <CreateTaskModal
+          isDark={isDark}
+          defaultStatus={createInStatus}
+          labels={labels}
+          onClose={() => setShowCreateModal(false)}
+          onCreate={handleCreateTask}
+          onCreateLabel={handleCreateLabel}
+        />
+      )}
+
+      {currentTask && (
+        <TaskDetailPanel
+          task={currentTask}
+          isDark={isDark}
+          labels={labels}
+          members={members}
+          userId={userId}
+          onClose={() => setSelectedTask(null)}
+          onUpdate={(updates) => handleUpdateTask(currentTask.id, updates)}
+          onDelete={() => handleDeleteTask(currentTask.id)}
+          onRefresh={loadData}
+          onCreateLabel={handleCreateLabel}
+          onCreateMember={handleCreateMember}
+        />
+      )}
     </div>
   );
 }

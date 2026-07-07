@@ -22,17 +22,20 @@ export function isDueSoon(dateStr: string | null): boolean {
 
 // Formats a date as "Jul 10" or "Jul 10, 2025" (if different year)
 export function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
+  const parts = dateStr.split("T")[0].split("-");
+  const year = parseInt(parts[0]);
+  const month = parseInt(parts[1]) - 1;
+  const day = parseInt(parts[2]);
   const now = new Date();
   const months = [
     "Jan", "Feb", "Mar", "Apr", "May", "Jun",
     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
   ];
 
-  if (date.getFullYear() === now.getFullYear()) {
-    return `${months[date.getMonth()]} ${date.getDate()}`;
+  if (year === now.getFullYear()) {
+    return `${months[month]} ${day}`;
   }
-  return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+  return `${months[month]} ${day}, ${year}`;
 }
 
 // Formats a timestamp as relative time: "5 minutes ago", "2 hours ago", etc.
