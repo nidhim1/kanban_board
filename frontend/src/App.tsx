@@ -92,6 +92,7 @@ export default function App() {
     status: TaskStatus;
     due_date: string | null;
     label_ids: string[];
+    member_ids: string[];
   }) => {
     if (!userId) return;
     try {

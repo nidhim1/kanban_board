@@ -5,7 +5,6 @@ import {
   ArrowDown,
   Minus,
   Calendar,
-  Users,
   MessageSquare,
   Activity,
   Plus,
