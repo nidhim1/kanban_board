@@ -16,7 +16,7 @@ interface TaskCardProps {
   task: Task;
   isDark: boolean;
   isDone?: boolean;     // Column tells us if this is the "done" column
-  isOverlay;
+  isOverlay?: boolean;  // True when rendering the drag ghost
   onClick: () => void;
 }
 
